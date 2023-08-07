@@ -1,16 +1,19 @@
-# This is a sample Python script.
+from aiogram import types
+from aiogram.dispatcher import Dispatcher
+from dataBase import sqlite_db
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+from aiogram.utils import executor
+
+from create_bot import dp
+
+from handlers import client, admin
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+async def on_startup(_):
+    sqlite_db.sql_start()
 
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+client.register_handlers_client(dp)
+admin.register_handlers_admin(dp)
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+executor.start_polling(dp, skip_updates=True, on_startup=on_startup)
