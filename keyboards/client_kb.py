@@ -1,8 +1,6 @@
-from aiogram.types import InlineKeyboardButton, inline_keyboard, reply_keyboard, ReplyKeyboardMarkup
+from aiogram.types import InlineKeyboardButton, ReplyKeyboardMarkup, InlineKeyboardMarkup
 
-b1 = inline_keyboard.InlineKeyboardButton('/start')
-b2 = inline_keyboard.InlineKeyboardButton('/new_cake')
-b3 = inline_keyboard.InlineKeyboardButton('/end')
-kb_client = ReplyKeyboardMarkup(resize_keyboard=True)
-
-kb_client.row (b1, b2, b3)
+b1 = InlineKeyboardButton(text='Создать организацию', callback_data='create')
+b2 = InlineKeyboardButton(text='Войти в организацию', callback_data='end')
+# b2 = inline_keyboard.InlineKeyboardButton('/new_cake')
+kb_client = InlineKeyboardMarkup(inline_keyboard=[ [ b1 ], [ b2 ] ])
