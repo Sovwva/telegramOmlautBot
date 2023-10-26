@@ -1,63 +1,66 @@
-import sqlite3 as sq
+import asyncio
+
+import aiosqlite
 from create_bot import bot, dp
 import datetime
 
-class last_message:
+class LastMessage:
 
     def __init__(self):
-        self._base = sq.connect('omlaut_dataBase.db')
-        self._cur = self._base.cursor()
+        self._db_file = 'omlaut_dataBase.db'
+        asyncio.run(self.initialize())
 
-        if self._base:
+    async def initialize(self):
+        self._db = await aiosqlite.connect(self._db_file)
+        if self._db:
             print('Data base connected OK!')
 
-        self._base.execute('''
-        CREATE TABLE IF NOT EXISTS last_messages (
-          chat_id int NOT NULL UNIQUE,
-          message_bot_id INT NOT NULL UNIQUE
-        )
-      ''')
+        await self._db.execute('''
+            CREATE TABLE IF NOT EXISTS last_messages (
+              chat_id int NOT NULL UNIQUE,
+              message_bot_id INT NOT NULL UNIQUE
+            )
+        ''')
+        await self._db.commit()
 
-        self._base.commit()
 
-    def update_last_message(self, chat_id, message_bot_id):
+    async def update_last_message(self, chat_id: int, message_bot_id: int):
         try:
-            # Попытка обновления записи, если она уже существует
-            self._cur.execute('''
+            async with self._db.execute('''
                 UPDATE last_messages
                 SET message_bot_id = ?
                 WHERE chat_id = ?
-            ''', (message_bot_id, chat_id))
+            ''', (message_bot_id, chat_id)) as cursor:
 
-            if self._cur.rowcount == 0:
-                # Если обновления не произошло, значит, записи нет, нужно вставить новую
-                self._cur.execute('''
-                    INSERT INTO last_messages (chat_id, message_bot_id)
-                    VALUES (?, ?)
-                ''', (chat_id, message_bot_id))
+                if cursor.rowcount == 0:
+                    await self._db.execute('''
+                        INSERT INTO last_messages (chat_id, message_bot_id)
+                        VALUES (?, ?)
+                    ''', (chat_id, message_bot_id))
 
-            self._base.commit()
+                await self._db.commit()
 
         except Exception as e:
             print(f"Ошибка при обновлении последнего сообщения: {e}")
 
-    def get_last_message(self, chat_id):
+    async def get_last_message(self, chat_id) -> int:
         try:
-            self._cur.execute('''
-                   SELECT message_bot_id
-                   FROM last_messages
-                   WHERE chat_id = ?
-               ''', (chat_id,))
+            async with self._db.execute('''
+                SELECT message_bot_id
+                FROM last_messages
+                WHERE chat_id = ?
+            ''', (chat_id,)) as cursor:
 
-            result = self._cur.fetchone()
+                result = await cursor.fetchone()
 
-            if result:
-                return result[0]  # Возвращаем message_bot_id последнего сообщения бота
-            else:
-                return None  # Если запись не найдена, возвращаем None
+                if result:
+                    return result[0]  # Возвращаем message_bot_id последнего сообщения бота
+                else:
+                    return None  # Если запись не найдена, возвращаем None
 
         except Exception as e:
             print(f"Ошибка при получении последнего сообщения: {e}")
             return None  # В случае ошибки также возвращаем None
 
-last_message = last_message()
+
+last_message = LastMessage()

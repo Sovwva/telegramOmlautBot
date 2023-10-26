@@ -25,7 +25,7 @@ class OrganizationManager:
 
         self._base.execute('''
           CREATE TABLE IF NOT EXISTS users_organizations (
-            user_id INTEGER NOT NULL UNIQUE,
+            chat_id INTEGER NOT NULL UNIQUE,
             organization_id INTEGER NOT NULL,
             FOREIGN KEY (organization_id) REFERENCES organizations(id)
           )
@@ -103,19 +103,19 @@ class OrganizationManager:
             print("Ошибка смены пароля")
 
     # 4. Добавление пользователя
-    def add_user_to_organization(self, user_id, org_name, password):
+    def add_user_to_organization(self, chat_id, org_name, password):
         # Проверка данных
-        correct_password = self.get_organization_password(self, user_id, org_name)
+        correct_password = self.get_organization_password(self, chat_id, org_name)
         if not correct_password or correct_password != password:
             print("Неверный пароль организации")
             return
 
         # Удаление пользователя из других организаций
-        self._base.execute("DELETE FROM users_organizations WHERE user_id = ?", (user_id,))
+        self._base.execute("DELETE FROM users_organizations WHERE chat_id = ?", (chat_id,))
 
         # Добавление в новую
-        self._base.execute("INSERT INTO users_organizations (user_id, organization_id) VALUES (?, ?)",
-                           (user_id, correct_password))
+        self._base.execute("INSERT INTO users_organizations (chat_id, organization_id) VALUES (?, ?)",
+                           (chat_id, correct_password))
 
         self._base.commit()
 

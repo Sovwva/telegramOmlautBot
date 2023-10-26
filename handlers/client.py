@@ -1,6 +1,7 @@
-import aiogram.exceptions
+import json
+import logging
 
-import create_bot
+import aiogram.exceptions
 
 welcome_text = ("Отлично, давай начнём знакомство с программой,"
                 "тебе необходимо создать организацию, или войти в неё")
@@ -17,31 +18,38 @@ from aiogram import F
 
 from dataBase import last_message, manager
 from create_bot import dp, bot
+from main import logger
 import datetime
 
 from keyboards import kb_client
 
 
-# async def start(message: types.Message):
-#     msg bot = last_message.get_last_message()
-#     msg_bot_id = last_message.get_last_message(message.chat.id)
-#     print(msg_bot)
-#     msg_client = message
-#     try:
-#         await msg_client.delete()
-#     except:
-#         pass
-#     try:
-#         if last_message.get_last_message(chat_id=message.cha) != start_text:
-#             try:
-#                 await msg_bot.edit_text(start_text, reply_markup=kb_client)
-#             except aiogram.exceptions.TelegramBadRequest:
-#                 msg_bot = await message.answer(text=start_text, reply_markup=kb_client)
-#     except NameError:
-#         msg_bot = await message.answer(text=welcome_text, reply_markup=kb_client)
-#         # bot.delete_message()
-#         # print(f'{msg.text}, {msg.message_id}')
-#         print(message.from_user.id)
+async def start(message: types.Message):
+    # print(message.chat)
+    msg_bot_chat_id = await last_message.get_last_message(message.chat.id)
+    if msg_bot_chat_id == None:
+        msg_bot = await bot.send_message(text=start_text, chat_id=message.chat.id, reply_markup=kb_client)
+        await last_message.update_last_message(message.chat.id, msg_bot.message_id)
+    else:
+        try:
+            await bot.edit_message_text(text=start_text, chat_id=message.chat.id, message_id=msg_bot_chat_id, reply_markup=kb_client)
+        except aiogram.exceptions.TelegramBadRequest as e:
+            if "message to edit not found" in str(e):
+                msg_bot = await bot.send_message(text=start_text, chat_id=message.chat.id, reply_markup=kb_client)
+                await last_message.update_last_message(msg_bot.id, msg_bot.message_id)
+            if "message is not modified" in str(e):
+                await bot.delete_message(chat_id=message.chat.id,
+                    message_id=await last_message.get_last_message(message.chat.id))
+                msg = await bot.send_message(text=start_text, chat_id=message.chat.id, reply_markup=kb_client)
+                await last_message.update_last_message(message.chat.id, msg.message_id)
+            else:
+                with open("config.json", "r") as json_file:
+                    json_data = json.load(json_file)
+                admin_id = json_data["admin_id"]
+                logger.error(msg=e)
+                await bot.send_message(text=str(e), chat_id=admin_id)
+
+    await message.delete()
 
 @dp.callback_query(lambda c : c.data == 'create')
 async def create(message: types.Message):
@@ -60,31 +68,32 @@ async def create(message: types.Message):
         # print(f'{msg.text}, {msg.message_id}')
         print(message.from_user.id)
 
+async def delete(message: types.Message):
+    await bot.delete_message(message.chat.id, message.message_id)
+    try:
+        print(await last_message.get_last_message(message.chat.id))
+        await bot.edit_message_text(text="Команда не распознана", chat_id=message.chat.id, message_id= await last_message.get_last_message(message.chat.id))
+    except aiogram.exceptions.TelegramBadRequest as e:
+        if "message is not modified" in str(e):
+            await bot.delete_message(chat_id=message.chat.id, message_id= await last_message.get_last_message(message.chat.id))
+            msg = await bot.send_message(text="Команда не распознана", chat_id=message.chat.id)
+            await last_message.update_last_message(message.chat.id, msg.message_id)
+        elif "message to edit not found" in str(e):
+            msg = await bot.send_message(text="Команда не распознана", chat_id=message.chat.id)
+            await last_message.update_last_message(chat_id=msg.chat.id, message_bot_id=msg.message_id)
+        else:
+            with open("config.json", "r") as json_file:
+                json_data = json.load(json_file)
+            admin_id = json_data["admin_id"]
+            logger.error(msg=e)
+            await bot.send_message(text=str(e), chat_id=admin_id)
 
-# # async def karmel(message: types.Message):
-# #     await message.answer('карамель - 300 грамм сахар, 180 сливки, 80 маргарина', reply_markup=kb_client)
-#
-# async def cakes(message: types.Message):
-#     await sqlite_db.sql_read(message)
-#
-#
-# async def end(message: types.Message):
-#     await message.answer('session ended', reply_markup=ReplyKeyboardRemove())
-#
-#
-
-# async def echo_send(message: types.Message):
-# #     await message.answer('Команда не найдена')
-#
-# async def cakes(message: types.Message):
-#     await sqlite_db.sql_read(message)
-#
-#
 
 def register_handlers_client(dp: Dispatcher):
     pass
-    # dp.message.register(start, F.text == "/start")
+    dp.message.register(start, F.text == "/start")
     # dp.register_message_handler(start, commands=['start'])
     # dp.register_message_handler(end, commands=['end'])
     # dp.register_message_handler(karmel, commands=['karmel'])
     # dp.register_message_handler(cakes, commands=['cakes'])
+    dp.message.register(delete)
