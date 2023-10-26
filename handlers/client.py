@@ -1,5 +1,7 @@
 import aiogram.exceptions
 
+import create_bot
+
 welcome_text = ("Отлично, давай начнём знакомство с программой,"
                 "тебе необходимо создать организацию, или войти в неё")
 
@@ -13,30 +15,33 @@ from aiogram.types import ReplyKeyboardRemove, callback_query
 
 from aiogram import F
 
-from dataBase import sqlite_db
+from dataBase import last_message, manager
 from create_bot import dp, bot
 import datetime
 
 from keyboards import kb_client
 
-from create_bot import dp
 
-async def start(message: types.Message):
-    global msg_bot
-    global msg_client
-    msg_client = message
-    await msg_client.delete()
-    try:
-        if msg_bot.text != start_text:
-            try:
-                await msg_bot.edit_text(start_text, reply_markup=kb_client)
-            except aiogram.exceptions.TelegramBadRequest:
-                msg_bot = await message.answer(text=start_text, reply_markup=kb_client)
-    except NameError:
-        msg_bot = await message.answer(text=welcome_text, reply_markup=kb_client)
-        # bot.delete_message()
-        # print(f'{msg.text}, {msg.message_id}')
-        print(message.from_user.id)
+# async def start(message: types.Message):
+#     msg bot = last_message.get_last_message()
+#     msg_bot_id = last_message.get_last_message(message.chat.id)
+#     print(msg_bot)
+#     msg_client = message
+#     try:
+#         await msg_client.delete()
+#     except:
+#         pass
+#     try:
+#         if last_message.get_last_message(chat_id=message.cha) != start_text:
+#             try:
+#                 await msg_bot.edit_text(start_text, reply_markup=kb_client)
+#             except aiogram.exceptions.TelegramBadRequest:
+#                 msg_bot = await message.answer(text=start_text, reply_markup=kb_client)
+#     except NameError:
+#         msg_bot = await message.answer(text=welcome_text, reply_markup=kb_client)
+#         # bot.delete_message()
+#         # print(f'{msg.text}, {msg.message_id}')
+#         print(message.from_user.id)
 
 @dp.callback_query(lambda c : c.data == 'create')
 async def create(message: types.Message):
@@ -77,7 +82,8 @@ async def create(message: types.Message):
 #
 
 def register_handlers_client(dp: Dispatcher):
-    dp.message.register(start, F.text == "/start")
+    pass
+    # dp.message.register(start, F.text == "/start")
     # dp.register_message_handler(start, commands=['start'])
     # dp.register_message_handler(end, commands=['end'])
     # dp.register_message_handler(karmel, commands=['karmel'])
