@@ -68,7 +68,7 @@ async def create(message: types.Message):
         # print(f'{msg.text}, {msg.message_id}')
         print(message.from_user.id)
 
-async def delete(message: types.Message):
+async def default(message: types.Message):
     await bot.delete_message(message.chat.id, message.message_id)
     try:
         print(await last_message.get_last_message(message.chat.id))
@@ -96,4 +96,4 @@ def register_handlers_client(dp: Dispatcher):
     # dp.register_message_handler(end, commands=['end'])
     # dp.register_message_handler(karmel, commands=['karmel'])
     # dp.register_message_handler(cakes, commands=['cakes'])
-    dp.message.register(delete)
+    dp.message.register(default)
